@@ -1,0 +1,50 @@
+version: "3.7"
+
+networks:
+    app-network:
+        driver: bridge
+
+services:
+    app:
+        build:
+            args:
+                PUID: ${PUID}
+                PGID: ${PGID}
+                DEFAULT_USER: ${DOCKER_USER}
+            context: .
+            dockerfile: Dockerfile
+        container_name: ${APP_NAME}
+        tty: true
+        volumes:
+            - ./:/var/www
+        networks:
+            - app-network
+        ports:
+            - "5173:5173"
+
+    nginx:
+        image: nginx:alpine
+        container_name: ${APP_NAME}-web-server
+        ports:
+            - "80:80"
+        volumes:
+            - ./:/var/www
+            - ./nginx:/etc/nginx/conf.d/
+        depends_on:
+            -   app
+        networks:
+            - app-network
+
+    mysql:
+        image: mysql:latest
+        container_name: ${APP_NAME}-database
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+            SERVICE_NAME: mysql
+        ports:
+            -   "33006:3306"
+        networks:
+            - app-network
